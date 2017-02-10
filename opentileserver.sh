@@ -10,6 +10,7 @@
 WEB_MODE="${1}"         #web,ssl
 OSM_STYLE="${2}"	#bright, carto
 PBF_URL="${3}";	#get URL from first parameter, http://download.geofabrik.de/europe/germany-latest.osm.pbf
+
 OSM_STYLE_XML=''
  
 CND_FOLDER='https://www.mapfig.com/'
@@ -38,7 +39,7 @@ fi
 touch /root/auth.txt
  
 function style_osm_bright(){
-	cd /usr/local/share/maps/style
+	cd /srv/osm/maps/style
 	if [ ! -d 'osm-bright-master' ]; then
 		wget https://github.com/mapbox/osm-bright/archive/master.zip
 		unzip master.zip;
@@ -68,12 +69,12 @@ function style_osm_bright(){
  
  
 	#9 Configuring OSM Bright
-	if [ $(grep -c '.zip' /usr/local/share/maps/style/osm-bright-master/osm-bright/osm-bright.osm2pgsql.mml) -ne 0 ]; then	#if we have zip in mml
-		cd /usr/local/share/maps/style/osm-bright-master
+	if [ $(grep -c '.zip' /srv/osm/maps/style/osm-bright-master/osm-bright/osm-bright.osm2pgsql.mml) -ne 0 ]; then	#if we have zip in mml
+		cd /srv/osm/maps/style/osm-bright-master
 		cp osm-bright/osm-bright.osm2pgsql.mml osm-bright/osm-bright.osm2pgsql.mml.orig
-		sed -i.save 's|.*simplified-land-polygons-complete-3857.zip",|"file":"/usr/local/share/maps/style/osm-bright-master/shp/simplified-land-polygons-complete-3857/simplified_land_polygons.shp",\n"type": "shape",|' osm-bright/osm-bright.osm2pgsql.mml
-		sed -i.save 's|.*land-polygons-split-3857.zip"|"file":"/usr/local/share/maps/style/osm-bright-master/shp/land-polygons-split-3857/land_polygons.shp",\n"type":"shape"|' osm-bright/osm-bright.osm2pgsql.mml
-		sed -i.save 's|.*10m-populated-places-simple.zip"|"file":"/usr/local/share/maps/style/osm-bright-master/shp/ne_10m_populated_places/ne_10m_populated_places.shp",\n"type": "shape"|' osm-bright/osm-bright.osm2pgsql.mml
+		sed -i.save 's|.*simplified-land-polygons-complete-3857.zip",|"file":"/srv/osm/maps/style/osm-bright-master/shp/simplified-land-polygons-complete-3857/simplified_land_polygons.shp",\n"type": "shape",|' osm-bright/osm-bright.osm2pgsql.mml
+		sed -i.save 's|.*land-polygons-split-3857.zip"|"file":"/srv/osm/maps/style/osm-bright-master/shp/land-polygons-split-3857/land_polygons.shp",\n"type":"shape"|' osm-bright/osm-bright.osm2pgsql.mml
+		sed -i.save 's|.*10m-populated-places-simple.zip"|"file":"/srv/osm/maps/style/osm-bright-master/shp/ne_10m_populated_places/ne_10m_populated_places.shp",\n"type": "shape"|' osm-bright/osm-bright.osm2pgsql.mml
  
 		sed -i.save '/name":[ \t]*"ne_places"/a"srs": "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"' osm-bright/osm-bright.osm2pgsql.mml
 		#Delete
@@ -86,17 +87,17 @@ function style_osm_bright(){
 	fi
  
 	#10 Compiling the stylesheet
-	if [ ! -f /usr/local/share/maps/style/osm-bright-master/OSMBright/OSMBright.xml ]; then
-		cd /usr/local/share/maps/style/osm-bright-master
+	if [ ! -f /srv/osm/maps/style/osm-bright-master/OSMBright/OSMBright.xml ]; then
+		cd /srv/osm/maps/style/osm-bright-master
 		cp configure.py.sample configure.py
-		sed -i.save 's|config\["path"\].*|config\["path"\] = path.expanduser("/usr/local/share/maps/style")|' configure.py
+		sed -i.save 's|config\["path"\].*|config\["path"\] = path.expanduser("/srv/osm/maps/style")|' configure.py
 		sed -i.save "s|config\[\"postgis\"\]\[\"dbname\"\].*|config\[\"postgis\"\]\[\"dbname\"\]=\"${OSM_DB}\"|" configure.py
 		./configure.py
 		./make.py
 		cd ../OSMBright/
 		carto project.mml > OSMBright.xml
 	fi
-	OSM_STYLE_XML='/usr/local/share/maps/style/OSMBright/OSMBright.xml'
+	OSM_STYLE_XML='/srv/osm/maps/style/OSMBright/OSMBright.xml'
 }
  
 function install_npm_carto(){
@@ -112,7 +113,7 @@ function style_osm_carto(){
  
 	apt-get -y install ttf-dejavu fonts-droid ttf-unifont fonts-sipa-arundina fonts-sil-padauk fonts-khmeros ttf-indic-fonts-core fonts-taml-tscu ttf-kannada-fonts
  
-	cd /usr/local/share/maps/style
+	cd /srv/osm/maps/style
 	if [ ! -d openstreetmap-carto-3.0.x ]; then
 		wget https://github.com/gravitystorm/openstreetmap-carto/archive/v3.0.x.zip
 		unzip v3.0.x.zip
@@ -127,8 +128,8 @@ function style_osm_carto(){
  
 	/usr/local/lib/node_modules/carto/bin/carto project.mml >osm-carto.xml
  
-	osm2pgsql_OPTS+=' --style /usr/local/share/maps/style/openstreetmap-carto-3.0.x/openstreetmap-carto.style'
-	OSM_STYLE_XML='/usr/local/share/maps/style/openstreetmap-carto-3.0.x/osm-carto.xml'
+	osm2pgsql_OPTS+=' --style /srv/osm/maps/style/openstreetmap-carto-3.0.x/openstreetmap-carto.style'
+	OSM_STYLE_XML='/srv/osm/maps/style/openstreetmap-carto-3.0.x/osm-carto.xml'
 }
  
 function enable_osm_updates(){
@@ -260,7 +261,7 @@ fi
  
 #8 Stylesheet configuration
 install_npm_carto;
-mkdir -p /usr/local/share/maps/style
+mkdir -p /srv/osm/maps/style
 case $OSM_STYLE in
 	bright)
 		style_osm_bright
